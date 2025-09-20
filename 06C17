@@ -1,0 +1,54 @@
+#define PIN_LED 9
+double on,off;
+int num;
+double usPeriod;
+const unsigned long duration = 5;
+const unsigned long duration1 = 5000;
+
+int set_period(int period) {
+  return period;
+}
+
+void set_duty(int duty, double* onTime, double* offTime) {
+  *onTime = usPeriod/100*duty;
+  *offTime = usPeriod/100*(100-duty);
+}
+
+void setup() {
+  pinMode(PIN_LED, OUTPUT);
+  Serial.begin(9600);
+  while (!Serial) {
+    ; 
+  }
+}
+
+void loop() {
+  Serial.println("period를 입력해주세요(ms)");
+  while (!Serial.available()); 
+  num = Serial.parseInt(); 
+  usPeriod = set_period(num);
+  
+  unsigned long startTime1 = millis();
+  while(millis() - startTime1 < duration1) {
+    for (int i = 0; i <= 100; i++) {
+      set_duty(i, &on, &off);
+      unsigned long startTime = millis();
+      while(millis() - startTime < duration) {
+        digitalWrite(PIN_LED, HIGH);
+        delayMicroseconds(on*1000);
+        digitalWrite(PIN_LED, LOW);
+        delayMicroseconds(off*1000);
+      }
+    }
+    for (int i = 100; i >= 0; i--) {
+      set_duty(i, &on, &off);
+      unsigned long startTime = millis();
+      while(millis() - startTime < duration) {
+        digitalWrite(PIN_LED, HIGH);
+        delayMicroseconds(on*1000);
+        digitalWrite(PIN_LED, LOW);
+        delayMicroseconds(off*1000);
+      }
+    }
+  }
+}
