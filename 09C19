@@ -1,0 +1,100 @@
+#define PIN_LED  9
+#define PIN_TRIG 11
+#define PIN_ECHO 13
+
+
+#define SND_VEL 346.0     
+#define INTERVAL 25       
+#define PULSE_DURATION 10
+#define _DIST_MIN 100     
+#define _DIST_MAX 300    
+
+#define TIMEOUT ((INTERVAL / 2) * 1000.0) 
+#define SCALE (0.001 * 0.5 * SND_VEL)     
+
+
+// global variables
+unsigned long last_sampling_time;   // unit: msec
+const int n = 30;
+float samples[n];
+int sampleIndex = 0;
+bool bufferFilled = false;
+
+void setup() {
+  // initialize GPIO pins
+  pinMode(PIN_LED,OUTPUT);
+  pinMode(PIN_TRIG,OUTPUT);
+  pinMode(PIN_ECHO,INPUT);
+  digitalWrite(PIN_TRIG, LOW);
+
+  // initialize serial port
+  Serial.begin(57600);
+}
+float medianFilter(float newValue) {
+  samples[sampleIndex] = newValue;
+  sampleIndex = (sampleIndex + 1) % n;
+
+  if (sampleIndex == 0) {
+    bufferFilled = true;
+  }
+
+  int validSize = bufferFilled ? n : sampleIndex;
+  float temp[validSize];
+  for (int i = 0; i < validSize; i++) {
+    temp[i] = samples[i];
+  }
+  
+  for (int i = 1; i < validSize; i++) {
+    float key = temp[i];
+    int j = i - 1;
+    while (j >= 0 && temp[j] > key) {
+      temp[j + 1] = temp[j];
+      j--;
+    }
+    temp[j + 1] = key;
+  }
+
+
+  if (validSize % 2 == 0) {
+    return (temp[validSize / 2 - 1] + temp[validSize / 2]) / 2.0;
+  } else {
+    return temp[validSize / 2];
+  }
+}
+
+void loop() {
+  float dist_raw, dist_filtered;
+
+  // wait until next sampling time. 
+  // millis() returns the number of milliseconds since the program started. 
+  // will overflow after 50 days.
+  if (millis() < last_sampling_time + INTERVAL)
+    return;
+
+  // get a distance reading from the USS
+  dist_raw = USS_measure(PIN_TRIG,PIN_ECHO);
+
+
+  float dist_median = medianFilter(dist_raw);
+
+  // output the distance to the serial port
+  Serial.print("Min:");   Serial.print(_DIST_MIN);
+  Serial.print(",raw:"); Serial.print(dist_raw);
+  Serial.print(",median:"); Serial.print(dist_median);
+  Serial.print(",Max:");  Serial.print(_DIST_MAX);
+  Serial.println("");
+
+  // update last sampling time
+  last_sampling_time += INTERVAL;
+}
+
+// get a distance reading from USS. return value is in millimeter.
+float USS_measure(int TRIG, int ECHO)
+{
+  digitalWrite(TRIG, HIGH);
+  delayMicroseconds(PULSE_DURATION);
+  digitalWrite(TRIG, LOW);
+  
+  return pulseIn(ECHO, HIGH, TIMEOUT) * SCALE; // unit: mm
+
+}
