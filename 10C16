@@ -1,0 +1,87 @@
+
+#include <Servo.h>
+
+#define PIN_SERVO 10
+#define PIN_TRIG 11
+#define PIN_ECHO 13
+
+#define SND_VEL 346.0     
+#define INTERVAL 25       
+#define PULSE_DURATION 10
+
+#define TIMEOUT ((INTERVAL / 2) * 1000.0) 
+#define SCALE (0.001 * 0.5 * SND_VEL)
+
+//코사인
+float cosine(float t) {
+  return (1 - cos(t * PI)) / 2.0;
+}
+//시그모이드
+float sigmoid(float x) {
+  return 1.0 / (1.0 + exp(-x));
+}
+unsigned long last_sampling_time;
+
+float USS_measure(int TRIG, int ECHO){
+  digitalWrite(TRIG, HIGH);
+  delayMicroseconds(PULSE_DURATION);
+  digitalWrite(TRIG, LOW);
+  
+  return pulseIn(ECHO, HIGH, TIMEOUT) * SCALE; // unit: mm
+
+}
+
+Servo myServo;
+int startAngle = 0;
+bool isOpen=false;
+void setup() {
+  pinMode(PIN_TRIG,OUTPUT);
+  pinMode(PIN_ECHO,INPUT);
+  digitalWrite(PIN_TRIG, LOW);
+  myServo.attach(PIN_SERVO);
+  
+  myServo.write(startAngle); // Set position
+  delay(500);
+  last_sampling_time = 0;
+  Serial.begin(57600);
+}
+
+void loop() {
+  float dist_raw;
+  
+  if (millis() < last_sampling_time + INTERVAL)
+    return;
+  last_sampling_time = millis();
+  dist_raw = USS_measure(PIN_TRIG,PIN_ECHO);
+  Serial.print(",raw:"); Serial.print(dist_raw);
+  if ((dist_raw <= 50)&&(dist_raw>0)) {
+    if(!isOpen){
+      for (float x = -6.0; x <= 6.0; x += 0.1) {
+        float s = sigmoid(x);         
+        int angle = (int)(s * 90.0); 
+        myServo.write(angle); 
+        delay(10); 
+      }
+      isOpen = true;
+    
+      }
+    } else {
+       if(isOpen) {
+        for (float x = 6.0; x >= -6.0; x -= 0.1) {
+          float s = sigmoid(x);         
+          int angle = (int)(s * 90.0); 
+          myServo.write(angle); 
+          delay(10); 
+        }
+        isOpen = false;
+      }
+   }
+  last_sampling_time += INTERVAL;
+  
+}
+
+
+
+
+
+
