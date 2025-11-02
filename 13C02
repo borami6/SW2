@@ -1,0 +1,77 @@
+#include <Servo.h>
+
+#define PIN_SERVO 10
+
+#define _DUTY_MIN 1000 // servo full clock-wise position (0 degree)
+#define _DUTY_NEU 1500 // servo neutral position (90 degree)
+#define _DUTY_MAX 2000 // servo full counter-clockwise position (180 degree)
+
+#define _POS_START _DUTY_NEU  // 0도 
+#define _POS_END   _DUTY_MAX  // 180도 
+
+#define _SERVO_SPEED 0.3  // servo speed limit (unit: degree/second) 
+
+#define INTERVAL 20     // servo update interval (unit: msec)
+
+unsigned long last_sampling_time; // unit: msec
+bool is_movement_complete = false;
+Servo myservo;
+
+float duty_change_per_interval; // INTERVAL 시간 동안 최대 Duty 변화량 (us/interval)
+float duty_target;       
+float duty_curr;         
+
+void setup() {
+  myservo.attach(PIN_SERVO);  
+  
+  duty_curr = (float)_POS_START;
+  duty_target = (float)_POS_END; 
+  myservo.writeMicroseconds(duty_curr);
+  
+  Serial.begin(57600);
+
+  //(Duty Range / 180도) * (속도(도/초)) * (INTERVAL(초))
+  duty_change_per_interval = (float)
+    (
+      ((float)(_DUTY_MAX - _DUTY_MIN) / 180.0) * // 1도당 Duty 변화량 (us/degree)
+      ((float)_SERVO_SPEED * ((float)INTERVAL / 1000.0))  // INTERVAL 동안 움직여야 할 각도 (degree/interval)
+    );
+
+  // initialize last sampling time
+  last_sampling_time = 0;
+}
+
+void loop() {
+  // wait until next sampling time
+  if (millis() < (last_sampling_time + INTERVAL))
+    return;
+
+  float diff = duty_target - duty_curr;
+  
+  if (abs(diff) > 0) { 
+    if (abs(diff) > duty_change_per_interval) {
+      if (diff > 0) {
+        duty_curr += duty_change_per_interval;
+      } else {
+        duty_curr -= duty_change_per_interval;
+      }
+    } else {
+      duty_curr = duty_target;
+    } 
+  } else {
+       if (!is_movement_complete) {
+         is_movement_complete = true;
+    }
+  }
+  
+  myservo.writeMicroseconds(duty_curr);
+
+  // output the read value to the serial port 
+  Serial.print("Min:1000");
+  Serial.print(",duty_target:"); Serial.print(duty_target);
+  Serial.print(",duty_curr:");   Serial.print(duty_curr);
+  Serial.println(",Max:2000");
+
+  // update last sampling time
+  last_sampling_time += INTERVAL;
+}
