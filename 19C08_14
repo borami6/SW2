@@ -1,0 +1,31 @@
+20252873 이현우 19C08_14
+시간 복잡도 (Time Complexity)
+시간 복잡도는 입력 크기가 증가함에 따라 알고리즘의 실행 시간이 얼마나 증가하는지를 나타내는 개념
+즉, 알고리즘의 성능을 수학적으로 분석하고 평가하는 척도, 순수하게 알고리즘이 수행하는 연산의 횟수를 기준으로 측정
+빅 오 표기법 
+최악의 경우에 걸리는 시간 복잡도를 나타냄
+ex) O(N), O(N^2), O(log N) 등
+O(N)은 입력 크기에 비례하여 연산 횟수가 증가하고,
+O(N^2)은 제곱에 비례하여 증가하고, 
+O(log N)은 입력 크기가 커져도 연산 횟수의 증가율이 매우 낮음.
+
+공간 복잡도 (Space Complexity)
+공간 복잡도는 입력 크기가 증가함에 따라 알고리즘이 문제를 해결하기 위해 사용하는 메모리 공간의 양이 얼마나 증가하는지를 나타내는 개념
+고정 공간 (Fixed Space): 입력이나 출력의 크기와 무관하게 알고리즘 자체에서 필요한 공간 (변수, 상수, 프로그램 코드 저장 공간 등).
+가변 공간 (Variable Space): 문제가 해결되는 과정에서 동적으로 필요한 공간 (입력 크기에 비례하는 공간, 재귀 호출 스택 공간 등).
+빅 오 표기법
+ex) O(N)
+크기 n의 배열을 입력으로 받아, 같은 크기의 새 배열을 생성.
+
+출처 : https://ko.wikipedia.org/wiki/%EC%8B%9C%EA%B0%84_%EB%B3%B5%EC%9E%A1%EB%8F%84
+https://ko.wikipedia.org/wiki/%EA%B3%B5%EA%B0%84_%EB%B3%B5%EC%9E%A1%EB%8F%84
+
+ir_sensor_filtered의 시간 복잡도 분석
+for (int i = 0; i < n; i++) 은 n에 비례해 연산횟수가 증가하는 O(N),
+qsort(ir_val, n, sizeof(unsigned int), compare); 은 O(n logn)
+큰 n값에 대해 가장 빠르게 증가하는 항은 O(n logn)이므로, 이 함수의 최종 시간 복잡도는 
+O(n logn)임.
+ir_sensor_filtered의 공간 복잡도 분석
+ir_val = (unsigned int *)malloc(sizeof(unsigned int) * n); 은 n개를 저장하기 위해 동적으로 할당되는 배열 O(n)
+unsigned int *ir_val, ret_val; 은 O(1)
+입력 크기 n에 따라 n개의 정수 값을 저장할 메모리를 동적으로 할당, 공간 복잡도는 O(n)
